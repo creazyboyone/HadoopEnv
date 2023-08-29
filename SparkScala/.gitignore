@@ -2,4 +2,5 @@
 src/test
 target
 *.iml
-src/data
+/src/model/decision_tree/data/*
+/src/model/decision_tree/metadata/*
