@@ -4,11 +4,11 @@ import java.io.File
 
 class FileUtils {
   def getDataFile(file: String): String = {
-    "/user/admin/data/" + file
+    "SparkScala/src/data/" + file
   }
 
   def getModelFile(file: String): String = {
-    "/user/admin/model/" + file
+    "SparkScala/src/model/" + file
   }
 
   def deleteFile(path: String): Unit = {

@@ -1,5 +1,6 @@
 package com.feng;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import java.io.IOException;
@@ -21,22 +22,24 @@ public class Test {
      * jdbc:hive2://<host>:<port>/<db>;principal=
      * <Server_Principal_of_HiveServer2>
      */
+    private static final String krbUsername = "hive@XXX.COM";
+    private static final String keytabPath = "C:\\ProgramData\\MIT\\Kerberos5\\userkrb.keytab";
+    private static final String krbConf = "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini";
+
     private static final String driverName = "org.apache.hive.jdbc.HiveDriver";
     private static final String url = "jdbc:hive2://hadoop97.xxx.com:10000/;principal=hive/hadoop97.xxx.com@XXX.COM";
+
     private static ResultSet res;
 
     public static Connection getConn() throws SQLException, ClassNotFoundException {
         // 使用Hadoop安全登录
-        org.apache.hadoop.conf.Configuration conf = new org.apache.hadoop.conf.Configuration();
+        Configuration conf = new Configuration();
         conf.set("hadoop.security.authentication", "Kerberos");
 
-        // 默认：这里不设置的话，win默认会到 C盘下读取krb5.init
-        if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
-            System.setProperty("java.security.krb5.conf", "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini");
-        }
+        System.setProperty("java.security.krb5.conf", krbConf);
         try {
             UserGroupInformation.setConfiguration(conf);
-            UserGroupInformation.loginUserFromKeytab("hive@XXX.COM", "C:\\ProgramData\\MIT\\Kerberos5\\userkrb.keytab");
+            UserGroupInformation.loginUserFromKeytab(krbUsername, keytabPath);
         } catch (IOException e1) {
             e1.printStackTrace();
         }
