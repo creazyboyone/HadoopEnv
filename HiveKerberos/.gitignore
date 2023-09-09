@@ -2,5 +2,5 @@
 .idea
 *.iml
 target
-keytab
-krb5conf
+src/main/resources/keytab
+src/main/resources/krb5conf
