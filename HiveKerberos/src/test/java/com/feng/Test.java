@@ -22,23 +22,27 @@ public class Test {
      * jdbc:hive2://<host>:<port>/<db>;principal=
      * <Server_Principal_of_HiveServer2>
      */
-    private static final String krbUsername = "hive@XXX.COM";
-    private static final String keytabPath = "C:\\ProgramData\\MIT\\Kerberos5\\userkrb.keytab";
-    private static final String krbConf = "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini";
+    private static final Boolean isWin = System.getProperty("os.name").toLowerCase().startsWith("win");
+    private static final String sep = isWin ? "\\" : "/";
+    private static final String prefix = System.getProperty("user.dir") + sep + "HiveKerberos" + sep;
+
+    private static final String krbUsername = "hive@TESTCLUSTER.COM";
+    private static final String keytabPath = prefix + "keytab" + sep + "hive.keytab";
+    private static final String krbConf = prefix + "krb5conf" + sep + "krb5.conf";
 
     private static final String driverName = "org.apache.hive.jdbc.HiveDriver";
-    private static final String url = "jdbc:hive2://hadoop97.xxx.com:10000/;principal=hive/hadoop97.xxx.com@XXX.COM";
+    private static final String url = "jdbc:hive2://hadoop97.macro.com:10000/;principal=hive/_HOST@TESTCLUSTER.COM";
 
     private static ResultSet res;
 
     public static Connection getConn() throws SQLException, ClassNotFoundException {
-        // 使用Hadoop安全登录
+        System.setProperty("java.security.krb5.conf", krbConf);
+
         Configuration conf = new Configuration();
         conf.set("hadoop.security.authentication", "Kerberos");
+        UserGroupInformation.setConfiguration(conf);
 
-        System.setProperty("java.security.krb5.conf", krbConf);
         try {
-            UserGroupInformation.setConfiguration(conf);
             UserGroupInformation.loginUserFromKeytab(krbUsername, keytabPath);
         } catch (IOException e1) {
             e1.printStackTrace();
@@ -51,8 +55,6 @@ public class Test {
     /**
      * 查看所有的数据库
      *
-     * @param statement stat
-     * @return boolean
      */
     public static boolean showDatabases(Statement statement) {
         String sql = "SHOW DATABASES";
@@ -161,6 +163,25 @@ public class Test {
         return false;
     }
 
+    /**
+     * 显示创建表语句
+     */
+    public static boolean showCreateTable(Statement statement, String tableName) {
+        String sql = "SHOW CREATE TABLE " + tableName;
+        System.out.println("===> " + sql);
+        try {
+            res = statement.executeQuery(sql);
+            while (res.next()) {
+                System.out.println(res.getString(1));
+            }
+            System.out.println("<=== ");
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static void main(String[] args) {
         String tableName = "aaa";
         try {
@@ -171,6 +192,7 @@ public class Test {
             showTables(stmt);
             createTable(stmt, tableName);
             describeTable(stmt, tableName);
+            showCreateTable(stmt, tableName);
             queryData(stmt, tableName);
             dropTable(stmt, tableName);
 
