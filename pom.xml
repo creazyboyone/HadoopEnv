@@ -13,6 +13,7 @@
         <module>SparkJava</module>
         <module>SparkScala</module>
         <module>HiveKerberos</module>
+        <module>HBaseTableGen</module>
     </modules>
 
     <properties>
