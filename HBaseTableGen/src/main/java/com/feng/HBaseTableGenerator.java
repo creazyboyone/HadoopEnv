@@ -29,6 +29,7 @@ import java.util.UUID;
 
 public class HBaseTableGenerator {
     private static final Logger logger = LoggerFactory.getLogger(HBaseTableGenerator.class);
+    static int colNum = 20;
 
     public static class BulkLoadMapper extends Mapper<NullWritable, NullWritable, ImmutableBytesWritable, MapReduceExtendedCell> {
         private static final byte[] CF = Bytes.toBytes("cf");
@@ -71,16 +72,16 @@ public class HBaseTableGenerator {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length < 3) {
-            logger.info("Usage: BigTableGenerator <outputPath> <numRows> <maps>");
+        if (args.length < 4) {
+            logger.info("Usage: BigTableGenerator <outputPath> <tableName> <colNum> <numRowsPerMap> <maps>");
             System.exit(1);
         }
-
+        colNum = Integer.parseInt(args[2]);
         logger.info("Read config file...");
         Configuration conf = new Configuration();
         conf.addResource(new Path("/etc/hbase/conf/hbase-site.xml"));
-        conf.setLong("num.rows", Long.parseLong(args[1]));
-        conf.setLong("mapreduce.job.maps", Long.parseLong(args[2]));
+        conf.setLong("num.rows", Long.parseLong(args[3]));
+        conf.setLong("mapreduce.job.maps", Long.parseLong(args[4]));
         conf.set("hbase.mapreduce.hfileoutputformat.compression", "gz");
 
         Iterator<Map.Entry<String, String>> iterator = conf.iterator();
@@ -89,7 +90,8 @@ public class HBaseTableGenerator {
             Map.Entry<String, String> entry = iterator.next();
             logger.info("{}: {}", entry.getKey(), entry.getValue());
         }
-        Job job = Job.getInstance(conf, "BigTableDataGen");
+        String tableName = args[1];
+        Job job = Job.getInstance(conf, "BigTableDataGen: " + tableName);
         job.setJarByClass(HBaseTableGenerator.class);
         job.setMapperClass(BulkLoadMapper.class);
         job.setOutputKeyClass(ImmutableBytesWritable.class);
@@ -101,8 +103,8 @@ public class HBaseTableGenerator {
         job.setInputFormatClass(NullInputFormat.class);
         FileInputFormat.setInputPaths(job, new Path("/tmp/test_input/"));
         try (Connection conn = ConnectionFactory.createConnection(conf);
-             RegionLocator regionLocator = conn.getRegionLocator(TableName.valueOf("big_table"))) {
-            Table table = conn.getTable(TableName.valueOf("big_table"));
+             RegionLocator regionLocator = conn.getRegionLocator(TableName.valueOf(tableName))) {
+            Table table = conn.getTable(TableName.valueOf(tableName));
             HFileOutputFormat2.configureIncrementalLoad(job, table.getDescriptor(), regionLocator);
             System.exit(job.waitForCompletion(true) ? 0 : 1);
         }
